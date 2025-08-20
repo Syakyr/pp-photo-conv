@@ -50,17 +50,50 @@
                     <h3>Passport Photo (400x514px)</h3>
                     <div class="canvas-container">
                         <canvas id="processedCanvas" width="400" height="514"></canvas>
+                        <svg id="headOutline" class="head-outline-overlay" width="400" height="514" style="display: none;">
+                            <!-- Head outline for ICAO passport photo alignment -->
+                            <!-- Head should be 32-36mm of 45mm photo height = 365-411px of 514px -->
+                            <!-- For 514px photo: head ~360px tall, positioned higher, top at y=60, bottom at y=380 -->
+                            <ellipse cx="200" cy="220" rx="95" ry="160" stroke="#00ff00" stroke-width="2" fill="none" opacity="0.8"/>
+                            
+                            <!-- Eye level guide (eyes should be around 60% from bottom of photo) -->
+                            <!-- Adjusted to match new ellipse position -->
+                            <line x1="105" y1="186" x2="295" y2="186" stroke="#00ff00" stroke-width="2" opacity="0.8"/>
+                            <text x="300" y="184" fill="#00ff00" font-size="12" opacity="0.9">Eyes</text>
+                            
+                            <!-- Top of head guide (including hair) -->
+                            <line x1="105" y1="60" x2="295" y2="60" stroke="#00ff00" stroke-width="1" opacity="0.6"/>
+                            <text x="300" y="58" fill="#00ff00" font-size="11" opacity="0.7">Top</text>
+                            
+                            <!-- Bottom of chin guide -->
+                            <line x1="105" y1="380" x2="295" y2="380" stroke="#00ff00" stroke-width="1" opacity="0.6"/>
+                            <text x="300" y="378" fill="#00ff00" font-size="11" opacity="0.7">Chin</text>
+                            
+                            <!-- Center guidelines (subtle) -->
+                            <line x1="0" y1="257" x2="400" y2="257" stroke="#00ff00" stroke-width="1" opacity="0.2"/>
+                            <line x1="200" y1="0" x2="200" y2="514" stroke="#00ff00" stroke-width="1" opacity="0.2"/>
+                            
+                            <!-- Shoulders guideline -->
+                            <path d="M 130 450 Q 200 440 270 450" stroke="#00ff00" stroke-width="1" fill="none" opacity="0.4"/>
+                        </svg>
                         <div class="drag-hint">Click and drag to reposition</div>
                     </div>
                     <div class="adjustment-controls">
-                        <label>
-                            Brightness:
-                            <input type="range" id="brightnessSlider" min="0.5" max="1.5" step="0.01" value="1">
-                            <span id="brightnessValue">100%</span>
+                        <label class="control-row">
+                            <span class="control-label">Brightness:</span>
+                            <div class="control-input">
+                                <input type="range" id="brightnessSlider" min="0.5" max="1.5" step="0.01" value="1">
+                                <span id="brightnessValue">100%</span>
+                            </div>
                         </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="backgroundToggle">
-                            Remove Background (Make White)
+                        <label class="control-row">
+                            <span class="control-label">Show Head Outline:</span>
+                            <div class="control-input">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="headOutlineToggle">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
                         </label>
                         <div class="zoom-info">
                             <small>Use scroll wheel or pinch to zoom</small>
@@ -80,6 +113,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/dist/face-api.min.js"></script>
+    <!-- AI Background Removal disabled for proxy environment compatibility -->
     <script src="script.js"></script>
 </body>
 </html>

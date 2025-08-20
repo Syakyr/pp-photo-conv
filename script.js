@@ -9,7 +9,8 @@ let imageY = 0;
 let isDragging = false;
 let dragStartX = 0;
 let dragStartY = 0;
-let backgroundRemoval = false;
+// Background removal variables removed - feature disabled
+let isProcessingBackground = false;
 
 const uploadArea = document.getElementById('uploadArea');
 const fileInput = document.getElementById('fileInput');
@@ -21,8 +22,11 @@ const resetBtn = document.getElementById('resetBtn');
 const brightnessSlider = document.getElementById('brightnessSlider');
 const brightnessValue = document.getElementById('brightnessValue');
 const faceDetectionStatus = document.getElementById('faceDetectionStatus');
-const backgroundToggle = document.getElementById('backgroundToggle');
 const recenterBtn = document.getElementById('recenterBtn');
+const headOutlineToggle = document.getElementById('headOutlineToggle');
+const headOutline = document.getElementById('headOutline');
+
+// Background removal functionality disabled for proxy environment compatibility
 
 async function loadFaceAPIModels() {
     try {
@@ -37,6 +41,9 @@ async function loadFaceAPIModels() {
 }
 
 loadFaceAPIModels();
+
+// AI Background Removal Function
+// Background removal function removed - feature disabled
 
 uploadArea.addEventListener('click', () => fileInput.click());
 
@@ -77,6 +84,9 @@ function handleFile(file) {
         showStatus('File size must be less than 8MB', 'error');
         return;
     }
+    
+    // Clear any previous state
+    // (Background removal feature disabled)
     
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -194,9 +204,12 @@ function updatePassportPhoto() {
     const viewportWidth = 400;
     const viewportHeight = 514;
     
+    // Use original image (background removal disabled)
+    const imageToUse = uploadedImage;
+    
     // Calculate scaled image dimensions
-    const scaledWidth = uploadedImage.width * currentZoom;
-    const scaledHeight = uploadedImage.height * currentZoom;
+    const scaledWidth = imageToUse.width * currentZoom;
+    const scaledHeight = imageToUse.height * currentZoom;
     
     // Constrain image position to prevent gray background from showing
     // Image must always completely cover the viewport
@@ -209,58 +222,18 @@ function updatePassportPhoto() {
     imageX = Math.max(minX, Math.min(maxX, imageX));
     imageY = Math.max(minY, Math.min(maxY, imageY));
     
-    // Clear viewport (this should never be visible due to constraints above)
-    ctx.fillStyle = backgroundRemoval ? '#ffffff' : '#f0f0f0';
+    // Clear viewport with light gray background
+    ctx.fillStyle = '#f0f0f0';
     ctx.fillRect(0, 0, viewportWidth, viewportHeight);
     
     ctx.filter = `brightness(${currentBrightness})`;
     
-    if (backgroundRemoval) {
-        // Create temporary canvas for background removal
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = viewportWidth;
-        tempCanvas.height = viewportHeight;
-        const tempCtx = tempCanvas.getContext('2d');
-        
-        // Draw the image at its current position and scale within the viewport
-        tempCtx.filter = `brightness(${currentBrightness})`;
-        tempCtx.drawImage(
-            uploadedImage,
-            imageX, imageY,
-            scaledWidth, scaledHeight
-        );
-        
-        // Apply simple background removal
-        const imageData = tempCtx.getImageData(0, 0, viewportWidth, viewportHeight);
-        const data = imageData.data;
-        
-        for (let i = 0; i < data.length; i += 4) {
-            const r = data[i];
-            const g = data[i + 1];
-            const b = data[i + 2];
-            
-            // Check if pixel is likely background (light colored)
-            const brightness = (r + g + b) / 3;
-            const saturation = Math.max(r, g, b) - Math.min(r, g, b);
-            
-            // If pixel is very light and low saturation, make it white
-            if (brightness > 180 && saturation < 50) {
-                data[i] = 255;     // R
-                data[i + 1] = 255; // G  
-                data[i + 2] = 255; // B
-            }
-        }
-        
-        ctx.putImageData(imageData, 0, 0);
-    } else {
-        // Draw the image at its constrained position and scale
-        // The image should always completely cover the viewport
-        ctx.drawImage(
-            uploadedImage,
-            imageX, imageY,
-            scaledWidth, scaledHeight
-        );
-    }
+    // Draw the image (either original or AI-processed with transparent background)
+    ctx.drawImage(
+        imageToUse,
+        imageX, imageY,
+        scaledWidth, scaledHeight
+    );
     
     ctx.filter = 'none';
 }
@@ -405,10 +378,15 @@ document.addEventListener('touchend', () => {
     initialPinchDistance = 0;
 });
 
-// Background removal toggle
-backgroundToggle.addEventListener('change', (e) => {
-    backgroundRemoval = e.target.checked;
-    updatePassportPhoto();
+
+// Head outline toggle
+headOutlineToggle.addEventListener('change', (e) => {
+    if (e.target.checked) {
+        headOutline.style.display = 'block';
+        showStatus('Head outline enabled - align your photo to the green guides', 'success');
+    } else {
+        headOutline.style.display = 'none';
+    }
 });
 
 // Re-center button
@@ -446,9 +424,9 @@ resetBtn.addEventListener('click', () => {
     currentBrightness = 1;
     imageX = 0;
     imageY = 0;
-    backgroundRemoval = false;
     brightnessSlider.value = 1;
-    backgroundToggle.checked = false;
+    headOutlineToggle.checked = false;
+    headOutline.style.display = 'none';
     brightnessValue.textContent = '100%';
     processingSection.style.display = 'none';
     fileInput.value = '';
