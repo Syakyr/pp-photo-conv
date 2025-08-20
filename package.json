@@ -1,0 +1,16 @@
+{
+  "name": "passport-photo-converter",
+  "version": "1.0.0",
+  "description": "Convert photos to ICA passport photo requirements",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["passport", "photo", "ica", "singapore"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

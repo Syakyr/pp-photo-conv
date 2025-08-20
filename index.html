@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICA Passport Photo Converter</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ICA Passport Photo Converter</h1>
+            <p>Convert your photo to meet Singapore ICA requirements (400x514 pixels)</p>
+        </header>
+
+        <div class="upload-section">
+            <div class="upload-area" id="uploadArea">
+                <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <p class="upload-text">Drop your photo here or click to upload</p>
+                <p class="upload-subtext">Supported formats: JPG, JPEG, PNG, HEIC, HEIF (Max 8MB)</p>
+                <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.heic,.heif" hidden>
+            </div>
+        </div>
+
+        <div class="requirements">
+            <h3>Photo Requirements:</h3>
+            <ul>
+                <li>✓ Face centered and looking straight</li>
+                <li>✓ Plain white or light-colored background</li>
+                <li>✓ Neutral expression with mouth closed</li>
+                <li>✓ Eyes open and clearly visible</li>
+                <li>✓ No headwear (except for religious purposes)</li>
+                <li>✓ No sunglasses or tinted glasses</li>
+                <li>✓ Recent photo (within last 3 months)</li>
+            </ul>
+        </div>
+
+        <div id="processingSection" class="processing-section" style="display: none;">
+            <div class="preview-container">
+                <div class="preview-box">
+                    <h3>Original Photo</h3>
+                    <canvas id="originalCanvas"></canvas>
+                </div>
+                <div class="arrow">→</div>
+                <div class="preview-box">
+                    <h3>Passport Photo (400x514px)</h3>
+                    <div class="canvas-container">
+                        <canvas id="processedCanvas" width="400" height="514"></canvas>
+                        <div class="drag-hint">Click and drag to reposition</div>
+                    </div>
+                    <div class="adjustment-controls">
+                        <label>
+                            Zoom:
+                            <input type="range" id="zoomSlider" min="1" max="3" step="0.01" value="1">
+                            <span id="zoomValue">1.0x</span>
+                        </label>
+                        <label>
+                            Brightness:
+                            <input type="range" id="brightnessSlider" min="0.5" max="1.5" step="0.01" value="1">
+                            <span id="brightnessValue">100%</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="backgroundToggle">
+                            Remove Background (Make White)
+                        </label>
+                        <button id="recenterBtn" class="btn btn-small">Re-center Photo</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button id="downloadBtn" class="btn btn-primary">Download Passport Photo</button>
+                <button id="resetBtn" class="btn btn-secondary">Upload New Photo</button>
+            </div>
+        </div>
+
+        <div id="faceDetectionStatus" class="status-message"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/dist/face-api.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
