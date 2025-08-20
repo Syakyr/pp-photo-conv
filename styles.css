@@ -107,7 +107,7 @@ header p {
 .preview-container {
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     gap: 30px;
     margin-bottom: 30px;
     flex-wrap: wrap;
@@ -130,10 +130,17 @@ header p {
 .preview-box canvas {
     border: 2px solid #ddd;
     border-radius: 10px;
-    max-width: 100%;
+    width: 400px;
     height: auto;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+#processedCanvas {
     cursor: move;
+}
+
+#originalCanvas {
+    cursor: default;
 }
 
 .drag-hint {
@@ -206,6 +213,23 @@ header p {
 
 .btn-small:hover {
     background: #5a6268;
+}
+
+.zoom-info {
+    margin: 10px 0;
+    text-align: center;
+}
+
+.zoom-info span {
+    font-weight: bold;
+    color: #667eea;
+}
+
+.zoom-info small {
+    display: block;
+    color: #999;
+    margin-top: 5px;
+    font-size: 0.8rem;
 }
 
 .actions {

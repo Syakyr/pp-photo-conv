@@ -4,8 +4,8 @@ let currentZoom = 1;
 let currentBrightness = 1;
 let faceDetection = null;
 let originalCropData = null;
-let offsetX = 0;
-let offsetY = 0;
+let imageX = 0; // Image position in viewport
+let imageY = 0;
 let isDragging = false;
 let dragStartX = 0;
 let dragStartY = 0;
@@ -18,8 +18,6 @@ const originalCanvas = document.getElementById('originalCanvas');
 const processedCanvas = document.getElementById('processedCanvas');
 const downloadBtn = document.getElementById('downloadBtn');
 const resetBtn = document.getElementById('resetBtn');
-const zoomSlider = document.getElementById('zoomSlider');
-const zoomValue = document.getElementById('zoomValue');
 const brightnessSlider = document.getElementById('brightnessSlider');
 const brightnessValue = document.getElementById('brightnessValue');
 const faceDetectionStatus = document.getElementById('faceDetectionStatus');
@@ -133,15 +131,16 @@ async function processImage() {
 }
 
 async function createPassportPhoto(detections) {
-    const ctx = processedCanvas.getContext('2d');
-    const targetWidth = 400;
-    const targetHeight = 514;
+    const viewportWidth = 400;
+    const viewportHeight = 514;
     
-    ctx.fillStyle = '#f0f0f0';
-    ctx.fillRect(0, 0, targetWidth, targetHeight);
+    // Calculate cover fit zoom (like CSS object-fit: cover)
+    // This ensures the image always completely covers the viewport with no empty space
+    const scaleX = viewportWidth / uploadedImage.width;
+    const scaleY = viewportHeight / uploadedImage.height;
+    const minZoom = Math.max(scaleX, scaleY); // Use larger scale to cover completely
     
-    let sourceX = 0, sourceY = 0, sourceWidth = uploadedImage.width, sourceHeight = uploadedImage.height;
-    
+    // Calculate initial image positioning
     if (detections) {
         const box = detections.detection.box;
         const scaleFactor = uploadedImage.width / originalCanvas.width;
@@ -150,87 +149,91 @@ async function createPassportPhoto(detections) {
         const faceCenterX = (box.x + box.width / 2) * scaleFactor;
         const faceCenterY = (box.y + box.height / 2) * scaleFactor;
         
-        const expansionFactor = 2.5;
-        sourceWidth = faceWidth * expansionFactor;
-        sourceHeight = sourceWidth * (targetHeight / targetWidth);
+        // Calculate initial zoom to fit face nicely, but ensure it covers viewport
+        const desiredFaceSize = viewportWidth * 0.4; // Face should be ~40% of viewport width
+        const faceZoom = desiredFaceSize / faceWidth;
+        currentZoom = Math.max(minZoom, faceZoom); // Use larger of cover fit or face zoom
         
-        sourceX = Math.max(0, faceCenterX - sourceWidth / 2);
-        sourceY = Math.max(0, faceCenterY - sourceHeight / 2.2);
+        // Calculate scaled dimensions
+        const scaledWidth = uploadedImage.width * currentZoom;
+        const scaledHeight = uploadedImage.height * currentZoom;
         
-        if (sourceX + sourceWidth > uploadedImage.width) {
-            sourceX = uploadedImage.width - sourceWidth;
-        }
-        if (sourceY + sourceHeight > uploadedImage.height) {
-            sourceY = uploadedImage.height - sourceHeight;
-        }
+        // Position face in viewport (face slightly above center)
+        imageX = (viewportWidth / 2) - (faceCenterX * currentZoom);
+        imageY = (viewportHeight * 0.4) - (faceCenterY * currentZoom);
+        
     } else {
-        const aspectRatio = targetWidth / targetHeight;
-        if (uploadedImage.width / uploadedImage.height > aspectRatio) {
-            sourceWidth = uploadedImage.height * aspectRatio;
-            sourceX = (uploadedImage.width - sourceWidth) / 2;
-        } else {
-            sourceHeight = uploadedImage.width / aspectRatio;
-            sourceY = (uploadedImage.height - sourceHeight) / 2;
-        }
+        // No face detected - use cover fit
+        currentZoom = minZoom;
+        
+        const scaledWidth = uploadedImage.width * currentZoom;
+        const scaledHeight = uploadedImage.height * currentZoom;
+        
+        // Center the image in viewport
+        imageX = (viewportWidth - scaledWidth) / 2;
+        imageY = (viewportHeight - scaledHeight) / 2;
     }
     
+    // Store data for reset and zoom limits
     originalCropData = {
-        sourceX: sourceX,
-        sourceY: sourceY,
-        sourceWidth: sourceWidth,
-        sourceHeight: sourceHeight
+        initialZoom: currentZoom,
+        initialX: imageX,
+        initialY: imageY,
+        minZoom: minZoom, // Minimum zoom to maintain cover fit
+        imageWidth: uploadedImage.width,
+        imageHeight: uploadedImage.height
     };
     
     updatePassportPhoto();
 }
 
 function updatePassportPhoto() {
-    if (!originalCropData || !uploadedImage) return;
+    if (!uploadedImage || !originalCropData) return;
     
     const ctx = processedCanvas.getContext('2d');
-    const targetWidth = 400;
-    const targetHeight = 514;
+    const viewportWidth = 400;
+    const viewportHeight = 514;
     
-    // Clear canvas with white background
+    // Calculate scaled image dimensions
+    const scaledWidth = uploadedImage.width * currentZoom;
+    const scaledHeight = uploadedImage.height * currentZoom;
+    
+    // Constrain image position to prevent gray background from showing
+    // Image must always completely cover the viewport
+    const minX = viewportWidth - scaledWidth;  // Leftmost position (negative when image > viewport)
+    const maxX = 0;                            // Rightmost position
+    const minY = viewportHeight - scaledHeight; // Topmost position (negative when image > viewport)
+    const maxY = 0;                            // Bottommost position
+    
+    // Clamp image position to bounds
+    imageX = Math.max(minX, Math.min(maxX, imageX));
+    imageY = Math.max(minY, Math.min(maxY, imageY));
+    
+    // Clear viewport (this should never be visible due to constraints above)
     ctx.fillStyle = backgroundRemoval ? '#ffffff' : '#f0f0f0';
-    ctx.fillRect(0, 0, targetWidth, targetHeight);
-    
-    // Calculate cropped dimensions based on zoom
-    const croppedWidth = originalCropData.sourceWidth / currentZoom;
-    const croppedHeight = originalCropData.sourceHeight / currentZoom;
-    
-    // Center the crop area and apply offsets
-    const cropX = originalCropData.sourceX + (originalCropData.sourceWidth - croppedWidth) / 2 + offsetX;
-    const cropY = originalCropData.sourceY + (originalCropData.sourceHeight - croppedHeight) / 2 + offsetY;
-    
-    // Ensure crop area stays within image bounds
-    const clampedX = Math.max(0, Math.min(cropX, uploadedImage.width - croppedWidth));
-    const clampedY = Math.max(0, Math.min(cropY, uploadedImage.height - croppedHeight));
-    const clampedWidth = Math.min(croppedWidth, uploadedImage.width - clampedX);
-    const clampedHeight = Math.min(croppedHeight, uploadedImage.height - clampedY);
+    ctx.fillRect(0, 0, viewportWidth, viewportHeight);
     
     ctx.filter = `brightness(${currentBrightness})`;
     
     if (backgroundRemoval) {
         // Create temporary canvas for background removal
         const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = targetWidth;
-        tempCanvas.height = targetHeight;
+        tempCanvas.width = viewportWidth;
+        tempCanvas.height = viewportHeight;
         const tempCtx = tempCanvas.getContext('2d');
         
-        // Draw image on temp canvas maintaining aspect ratio
+        // Draw the image at its current position and scale within the viewport
         tempCtx.filter = `brightness(${currentBrightness})`;
         tempCtx.drawImage(
             uploadedImage,
-            clampedX, clampedY, clampedWidth, clampedHeight,
-            0, 0, targetWidth, targetHeight
+            imageX, imageY,
+            scaledWidth, scaledHeight
         );
         
-        // Apply simple background removal (white threshold)
-        const imageData = tempCtx.getImageData(0, 0, targetWidth, targetHeight);
+        // Apply simple background removal
+        const imageData = tempCtx.getImageData(0, 0, viewportWidth, viewportHeight);
         const data = imageData.data;
         
-        // Simple edge detection and background replacement
         for (let i = 0; i < data.length; i += 4) {
             const r = data[i];
             const g = data[i + 1];
@@ -243,64 +246,75 @@ function updatePassportPhoto() {
             // If pixel is very light and low saturation, make it white
             if (brightness > 180 && saturation < 50) {
                 data[i] = 255;     // R
-                data[i + 1] = 255; // G
+                data[i + 1] = 255; // G  
                 data[i + 2] = 255; // B
             }
         }
         
         ctx.putImageData(imageData, 0, 0);
     } else {
-        // Draw image maintaining aspect ratio
+        // Draw the image at its constrained position and scale
+        // The image should always completely cover the viewport
         ctx.drawImage(
             uploadedImage,
-            clampedX, clampedY, clampedWidth, clampedHeight,
-            0, 0, targetWidth, targetHeight
+            imageX, imageY,
+            scaledWidth, scaledHeight
         );
     }
     
     ctx.filter = 'none';
 }
 
-zoomSlider.addEventListener('input', (e) => {
-    currentZoom = parseFloat(e.target.value);
-    zoomValue.textContent = currentZoom.toFixed(1) + 'x';
-    updatePassportPhoto();
-});
 
+// Brightness control
 brightnessSlider.addEventListener('input', (e) => {
     currentBrightness = parseFloat(e.target.value);
     brightnessValue.textContent = Math.round(currentBrightness * 100) + '%';
     updatePassportPhoto();
 });
 
-// Add mouse drag functionality
-processedCanvas.addEventListener('mousedown', (e) => {
-    if (!originalCropData) return;
-    isDragging = true;
+// Mouse wheel zoom
+processedCanvas.addEventListener('wheel', (e) => {
+    if (!uploadedImage || !originalCropData) return;
+    e.preventDefault();
+    
     const rect = processedCanvas.getBoundingClientRect();
-    dragStartX = e.clientX - rect.left;
-    dragStartY = e.clientY - rect.top;
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    
+    // Zoom factor
+    const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+    const newZoom = Math.max(originalCropData.minZoom, Math.min(5, currentZoom * zoomFactor));
+    
+    // Zoom towards mouse position
+    const zoomChange = newZoom / currentZoom;
+    imageX = mouseX - (mouseX - imageX) * zoomChange;
+    imageY = mouseY - (mouseY - imageY) * zoomChange;
+    
+    currentZoom = newZoom;
+    updatePassportPhoto();
+});
+
+// Mouse drag functionality
+processedCanvas.addEventListener('mousedown', (e) => {
+    if (!uploadedImage) return;
+    isDragging = true;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
     processedCanvas.style.cursor = 'grabbing';
     e.preventDefault();
 });
 
 document.addEventListener('mousemove', (e) => {
-    if (isDragging && originalCropData) {
-        const rect = processedCanvas.getBoundingClientRect();
-        const currentX = e.clientX - rect.left;
-        const currentY = e.clientY - rect.top;
+    if (isDragging) {
+        const deltaX = e.clientX - dragStartX;
+        const deltaY = e.clientY - dragStartY;
         
-        // Calculate movement delta (inverted for natural dragging)
-        const deltaX = -(currentX - dragStartX);
-        const deltaY = -(currentY - dragStartY);
+        imageX += deltaX;
+        imageY += deltaY;
         
-        // Apply movement to offsets
-        offsetX += deltaX;
-        offsetY += deltaY;
-        
-        // Update drag start position for next movement
-        dragStartX = currentX;
-        dragStartY = currentY;
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
         
         updatePassportPhoto();
     }
@@ -315,45 +329,80 @@ document.addEventListener('mouseup', () => {
     }
 });
 
-// Add touch drag functionality for mobile
+// Touch support
+let initialPinchDistance = 0;
+let initialZoom = 1;
+
 processedCanvas.addEventListener('touchstart', (e) => {
-    if (!originalCropData) return;
-    isDragging = true;
-    const touch = e.touches[0];
-    const rect = processedCanvas.getBoundingClientRect();
-    dragStartX = touch.clientX - rect.left;
-    dragStartY = touch.clientY - rect.top;
+    if (!uploadedImage) return;
     e.preventDefault();
+    
+    if (e.touches.length === 1) {
+        // Single touch - drag
+        isDragging = true;
+        dragStartX = e.touches[0].clientX;
+        dragStartY = e.touches[0].clientY;
+    } else if (e.touches.length === 2) {
+        // Two touches - pinch zoom
+        isDragging = false;
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        initialPinchDistance = Math.hypot(
+            touch2.clientX - touch1.clientX,
+            touch2.clientY - touch1.clientY
+        );
+        initialZoom = currentZoom;
+    }
 });
 
 document.addEventListener('touchmove', (e) => {
-    if (isDragging && originalCropData) {
-        const touch = e.touches[0];
-        const rect = processedCanvas.getBoundingClientRect();
-        const currentX = touch.clientX - rect.left;
-        const currentY = touch.clientY - rect.top;
+    if (!uploadedImage) return;
+    e.preventDefault();
+    
+    if (e.touches.length === 1 && isDragging) {
+        // Single touch drag
+        const deltaX = e.touches[0].clientX - dragStartX;
+        const deltaY = e.touches[0].clientY - dragStartY;
         
-        // Calculate movement delta (inverted for natural dragging)
-        const deltaX = -(currentX - dragStartX);
-        const deltaY = -(currentY - dragStartY);
+        imageX += deltaX;
+        imageY += deltaY;
         
-        // Apply movement to offsets
-        offsetX += deltaX;
-        offsetY += deltaY;
-        
-        // Update drag start position for next movement
-        dragStartX = currentX;
-        dragStartY = currentY;
+        dragStartX = e.touches[0].clientX;
+        dragStartY = e.touches[0].clientY;
         
         updatePassportPhoto();
-        e.preventDefault();
+    } else if (e.touches.length === 2) {
+        // Pinch zoom
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        const currentDistance = Math.hypot(
+            touch2.clientX - touch1.clientX,
+            touch2.clientY - touch1.clientY
+        );
+        
+        if (initialPinchDistance > 0 && originalCropData) {
+            const scale = currentDistance / initialPinchDistance;
+            const newZoom = Math.max(originalCropData.minZoom, Math.min(5, initialZoom * scale));
+            
+            // Get center point of pinch
+            const rect = processedCanvas.getBoundingClientRect();
+            const centerX = ((touch1.clientX + touch2.clientX) / 2) - rect.left;
+            const centerY = ((touch1.clientY + touch2.clientY) / 2) - rect.top;
+            
+            // Zoom towards pinch center
+            const zoomChange = newZoom / currentZoom;
+            imageX = centerX - (centerX - imageX) * zoomChange;
+            imageY = centerY - (centerY - imageY) * zoomChange;
+            
+            currentZoom = newZoom;
+            updatePassportPhoto();
+        }
     }
 });
 
 document.addEventListener('touchend', () => {
-    if (isDragging) {
-        isDragging = false;
-    }
+    isDragging = false;
+    initialPinchDistance = 0;
 });
 
 // Background removal toggle
@@ -364,12 +413,15 @@ backgroundToggle.addEventListener('change', (e) => {
 
 // Re-center button
 recenterBtn.addEventListener('click', () => {
-    offsetX = 0;
-    offsetY = 0;
-    updatePassportPhoto();
-    // Ensure cursor remains as move after re-centering
-    if (processedCanvas) {
-        processedCanvas.style.cursor = 'move';
+    if (originalCropData) {
+        currentZoom = originalCropData.initialZoom;
+        imageX = originalCropData.initialX;
+        imageY = originalCropData.initialY;
+        updatePassportPhoto();
+        // Ensure cursor remains as move after re-centering
+        if (processedCanvas) {
+            processedCanvas.style.cursor = 'move';
+        }
     }
 });
 
@@ -392,13 +444,11 @@ resetBtn.addEventListener('click', () => {
     faceDetection = null;
     currentZoom = 1;
     currentBrightness = 1;
-    offsetX = 0;
-    offsetY = 0;
+    imageX = 0;
+    imageY = 0;
     backgroundRemoval = false;
-    zoomSlider.value = 1;
     brightnessSlider.value = 1;
     backgroundToggle.checked = false;
-    zoomValue.textContent = '1.0x';
     brightnessValue.textContent = '100%';
     processingSection.style.display = 'none';
     fileInput.value = '';

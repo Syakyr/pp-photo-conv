@@ -54,11 +54,6 @@
                     </div>
                     <div class="adjustment-controls">
                         <label>
-                            Zoom:
-                            <input type="range" id="zoomSlider" min="1" max="3" step="0.01" value="1">
-                            <span id="zoomValue">1.0x</span>
-                        </label>
-                        <label>
                             Brightness:
                             <input type="range" id="brightnessSlider" min="0.5" max="1.5" step="0.01" value="1">
                             <span id="brightnessValue">100%</span>
@@ -67,6 +62,9 @@
                             <input type="checkbox" id="backgroundToggle">
                             Remove Background (Make White)
                         </label>
+                        <div class="zoom-info">
+                            <small>Use scroll wheel or pinch to zoom</small>
+                        </div>
                         <button id="recenterBtn" class="btn btn-small">Re-center Photo</button>
                     </div>
                 </div>
