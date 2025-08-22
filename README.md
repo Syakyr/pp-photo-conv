@@ -2,17 +2,17 @@
 
 🌐 **Live Site: [https://syakyr.github.io/pp-photo-conv/](https://syakyr.github.io/pp-photo-conv/)**
 
-A web application that converts regular photos into Singapore ICA-compliant passport photos (400x514 pixels) with automatic face detection, background removal, and manual adjustments.
+A web application that converts regular photos into Singapore ICA-compliant passport photos (400x514 pixels) with automatic face detection and manual adjustments.
 
 ## Features
 
 - **Automatic Face Detection**: Uses AI to detect and center faces automatically
 - **Manual Positioning**: Click and drag to reposition the photo for perfect centering
-- **Background Removal**: Option to remove/whiten backgrounds to meet ICA requirements
+- **Zoom Control**: Use mouse wheel or pinch gestures to zoom in/out
 - **Adjustable Controls**:
-  - Zoom slider for size adjustment
   - Brightness control for lighting correction
   - Re-center button to reset position
+  - ICAO-compliant head outline guide (toggle on/off)
 - **ICA Compliant**: Outputs 400x514 pixel photos as required by Singapore ICA
 - **Multiple Format Support**: Accepts JPG, JPEG, PNG, HEIC, and HEIF formats (max 8MB)
 
@@ -52,9 +52,10 @@ http://localhost:3000
 
 4. Adjust your photo:
    - Drag the photo to position your face
-   - Use zoom slider to adjust size
+   - Use mouse wheel or pinch to zoom in/out
    - Adjust brightness if needed
-   - Toggle "Remove Background" for white background
+   - Toggle "Show Head Outline" for alignment guide
+   - Click "Re-center Photo" to reset position
 
 5. Download the passport photo (400x514px JPG)
 
