@@ -1,5 +1,7 @@
 # ICA Passport Photo Converter
 
+🌐 **Live Site: [https://syakyr.github.io/pp-photo-conv/](https://syakyr.github.io/pp-photo-conv/)**
+
 A web application that converts regular photos into Singapore ICA-compliant passport photos (400x514 pixels) with automatic face detection, background removal, and manual adjustments.
 
 ## Features
@@ -97,40 +99,35 @@ The application helps you meet these ICA requirements:
 ## Deployment
 
 ### GitHub Pages (Static Hosting)
-The app can run as a static site without the Express server:
+The app runs as a static site and is automatically deployed to: **[https://syakyr.github.io/pp-photo-conv/](https://syakyr.github.io/pp-photo-conv/)**
 
 1. Enable GitHub Pages in your repository settings
-2. The GitHub Action will automatically deploy on push to main branch
-3. Access at: `https://[username].github.io/[repository-name]/`
+2. The GitHub Action automatically deploys on push to main branch
 
-### Vercel
+### Alternative Deployment Options
+
+#### Vercel
 1. Install Vercel CLI: `npm i -g vercel`
 2. Run: `vercel`
-3. Or use the GitHub Action with these secrets:
-   - `VERCEL_TOKEN`
-   - `VERCEL_ORG_ID`
-   - `VERCEL_PROJECT_ID`
+3. Follow the prompts to deploy
 
-### Netlify
+#### Netlify
 1. Connect your GitHub repository to Netlify
 2. Deploy settings are configured in `netlify.toml`
 3. Automatic deploys on push to main branch
 
-### Manual Deployment (VPS/Cloud)
+#### Manual Deployment (VPS/Cloud)
 1. Clone repository on your server
 2. Run `npm install`
 3. Set PORT environment variable (optional)
 4. Run `npm start` or use PM2: `pm2 start server.js`
 
-## GitHub Actions Workflows
+## GitHub Actions Workflow
 
-Two workflows are included:
+The repository includes:
 - **deploy.yml**: Deploys to GitHub Pages (static hosting)
-- **deploy-vercel.yml**: Deploys to Vercel (with preview deployments for PRs)
 
-To use GitHub Actions:
-1. Push to main branch for production deployment
-2. Create pull requests for preview deployments (Vercel only)
+GitHub Actions automatically deploys to GitHub Pages on every push to the main branch.
 
 ## License
 
